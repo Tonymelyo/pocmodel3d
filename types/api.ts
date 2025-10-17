@@ -26,6 +26,12 @@ export interface Tripo3DTaskStatus {
     status: "queued" | "running" | "success" | "failed";
     output?: {
       model?: string;
+      pbr_model?: string;
+    };
+    result?: {
+      pbr_model?: {
+        url: string;
+      };
     };
     progress?: number;
   };
