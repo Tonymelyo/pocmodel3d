@@ -1,6 +1,4 @@
 import type { Tripo3DTaskResponse, Tripo3DTaskStatus } from "@/types/api";
-import { generateUniqueId } from "@/lib/utils";
-import { put } from "@vercel/blob";
 
 const TRIPO3D_API_KEY = process.env.TRIPO3D_API_KEY;
 const TRIPO3D_BASE_URL = "https://api.tripo3d.ai/v2/openapi";
@@ -91,37 +89,11 @@ export async function pollTripo3DTask(taskId: string): Promise<string> {
   throw new Error("Tripo3D task timeout: exceeded maximum polling time");
 }
 
-export async function downloadAndSaveModel(
-  modelUrl: string,
-  uniqueId?: string
-): Promise<string> {
-  const id = uniqueId || generateUniqueId();
-  const filename = `terrain_${id}.glb`;
-
-  const response = await fetch(modelUrl);
-
-  if (!response.ok) {
-    throw new Error(`Failed to download model: ${response.status}`);
-  }
-
-  const buffer = await response.arrayBuffer();
-
-  // Upload to Vercel Blob Storage
-  const blob = await put(filename, buffer, {
-    access: "public",
-    contentType: "model/gltf-binary",
-  });
-
-  return blob.url;
-}
-
 export async function generateTerrainModel(imageBase64: string): Promise<string> {
   console.log("[Tripo3D] Starting model generation...");
   const taskId = await uploadImageToTripo3D(imageBase64);
   console.log(`[Tripo3D] Task created with ID: ${taskId}`);
   const modelUrl = await pollTripo3DTask(taskId);
-  console.log(`[Tripo3D] Downloading model from: ${modelUrl}`);
-  const blobUrl = await downloadAndSaveModel(modelUrl);
-  console.log(`[Tripo3D] Model uploaded to Vercel Blob: ${blobUrl}`);
-  return blobUrl;
+  console.log(`[Tripo3D] Model ready at: ${modelUrl}`);
+  return modelUrl;
 }
