@@ -4,8 +4,17 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import { Suspense } from "react";
 
+function getProxyUrl(originalUrl: string): string {
+  // If URL is from Tripo3D, proxy it through our API to avoid CORS issues
+  if (originalUrl.includes("tripo3d.com")) {
+    return `/api/proxy-model?url=${encodeURIComponent(originalUrl)}`;
+  }
+  return originalUrl;
+}
+
 function Model({ url }: { url: string }) {
-  const { scene } = useGLTF(url);
+  const proxiedUrl = getProxyUrl(url);
+  const { scene } = useGLTF(proxiedUrl);
   return <primitive object={scene} scale={1} />;
 }
 
