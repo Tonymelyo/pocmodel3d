@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import TerrainUploader from "@/components/terrain-uploader";
-import TerrainForm from "@/components/terrain-form";
 import ModelViewer from "@/components/model-viewer";
 import AnalysisReport from "@/components/analysis-report";
-import type { TerrainData } from "@/types/terrain";
 import type { AnalyzeTerrainResponse } from "@/types/api";
 
 type AppState = "idle" | "analyzing" | "completed" | "error";
@@ -13,19 +11,14 @@ type AppState = "idle" | "analyzing" | "completed" | "error";
 export default function Home() {
   const [state, setState] = useState<AppState>("idle");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [formData, setFormData] = useState<TerrainData>({
-    location: "",
-    surface: 0,
-    constraints: "",
-  });
   const [result, setResult] = useState<AnalyzeTerrainResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedImage || !formData.location || !formData.surface) {
-      setError("Veuillez remplir tous les champs obligatoires");
+    if (!selectedImage) {
+      setError("Veuillez sélectionner une image");
       return;
     }
 
@@ -35,10 +28,7 @@ export default function Home() {
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("image", selectedImage);
-      formDataToSend.append(
-        "description",
-        `Localisation: ${formData.location}, Surface: ${formData.surface}m², Contraintes: ${formData.constraints}`
-      );
+      formDataToSend.append("description", "Analyse de terrain pour projet immobilier");
 
       const response = await fetch("/api/analyze-terrain", {
         method: "POST",
@@ -64,7 +54,6 @@ export default function Home() {
   const handleReset = () => {
     setState("idle");
     setSelectedImage(null);
-    setFormData({ location: "", surface: 0, constraints: "" });
     setResult(null);
     setError(null);
   };
@@ -91,14 +80,9 @@ export default function Home() {
               />
             </div>
 
-            <div className="bg-background border border-foreground/10 rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Informations</h2>
-              <TerrainForm formData={formData} onChange={setFormData} />
-            </div>
-
             <button
               type="submit"
-              disabled={!selectedImage || !formData.location || !formData.surface}
+              disabled={!selectedImage}
               className="w-full py-3 px-6 bg-foreground text-background rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Analyser le Terrain
