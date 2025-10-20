@@ -1,7 +1,6 @@
 import type { Tripo3DTaskResponse, Tripo3DTaskStatus } from "@/types/api";
 import { generateUniqueId } from "@/lib/utils";
-import { writeFile } from "fs/promises";
-import { join } from "path";
+import { put } from "@vercel/blob";
 
 const TRIPO3D_API_KEY = process.env.TRIPO3D_API_KEY;
 const TRIPO3D_BASE_URL = "https://api.tripo3d.ai/v2/openapi";
@@ -98,8 +97,6 @@ export async function downloadAndSaveModel(
 ): Promise<string> {
   const id = uniqueId || generateUniqueId();
   const filename = `terrain_${id}.glb`;
-  const publicPath = `/models/${filename}`;
-  const filepath = join(process.cwd(), "public", "models", filename);
 
   const response = await fetch(modelUrl);
 
@@ -108,9 +105,14 @@ export async function downloadAndSaveModel(
   }
 
   const buffer = await response.arrayBuffer();
-  await writeFile(filepath, Buffer.from(buffer));
 
-  return publicPath;
+  // Upload to Vercel Blob Storage
+  const blob = await put(filename, buffer, {
+    access: "public",
+    contentType: "model/gltf-binary",
+  });
+
+  return blob.url;
 }
 
 export async function generateTerrainModel(imageBase64: string): Promise<string> {
@@ -119,7 +121,7 @@ export async function generateTerrainModel(imageBase64: string): Promise<string>
   console.log(`[Tripo3D] Task created with ID: ${taskId}`);
   const modelUrl = await pollTripo3DTask(taskId);
   console.log(`[Tripo3D] Downloading model from: ${modelUrl}`);
-  const localPath = await downloadAndSaveModel(modelUrl);
-  console.log(`[Tripo3D] Model saved to: ${localPath}`);
-  return localPath;
+  const blobUrl = await downloadAndSaveModel(modelUrl);
+  console.log(`[Tripo3D] Model uploaded to Vercel Blob: ${blobUrl}`);
+  return blobUrl;
 }
